@@ -1,0 +1,92 @@
+{
+  "ngspice": {
+    "description": "Mixed-level/mixed-signal electronic circuit simulator",
+    "category": "simulator",
+    "check": "ngspice -v",
+    "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
+    "latest_version": "43",
+    "install": {
+      "linux": "sudo apt install ngspice -y",
+      "windows": "winget install --id=ngspice.ngspice -e --accept-package-agreements --accept-source-agreements",
+      "macos": "brew install ngspice"
+    },
+    "uninstall": {
+      "linux": "sudo apt remove ngspice -y",
+      "windows": "winget uninstall --id=ngspice.ngspice -e",
+      "macos": "brew uninstall ngspice"
+    },
+    "homepage": "https://ngspice.sourceforge.io/"
+  },
+  "kicad": {
+    "description": "Open-source electronics design automation suite",
+    "category": "eda",
+    "check": "kicad-cli version",
+    "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
+    "latest_version": "8.0",
+    "install": {
+      "linux": "sudo apt install kicad -y",
+      "windows": "winget install --id=KiCad.KiCad -e --accept-package-agreements --accept-source-agreements",
+      "macos": "brew install --cask kicad"
+    },
+    "uninstall": {
+      "linux": "sudo apt remove kicad -y",
+      "windows": "winget uninstall --id=KiCad.KiCad -e",
+      "macos": "brew uninstall --cask kicad"
+    },
+    "homepage": "https://www.kicad.org/"
+  },
+  "ghdl": {
+    "description": "Open-source VHDL simulator",
+    "category": "simulator",
+    "check": "ghdl --version",
+    "version_regex": "GHDL\\s+(\\S+)",
+    "latest_version": "4.1.0",
+    "install": {
+      "linux": "sudo apt install ghdl -y",
+      "windows": "echo Install GHDL manually from https://github.com/ghdl/ghdl/releases",
+      "macos": "brew install ghdl"
+    },
+    "uninstall": {
+      "linux": "sudo apt remove ghdl -y",
+      "windows": "echo Uninstall GHDL manually",
+      "macos": "brew uninstall ghdl"
+    },
+    "homepage": "https://ghdl.github.io/ghdl/"
+  },
+  "verilator": {
+    "description": "Open-source Verilog/SystemVerilog simulator and lint system",
+    "category": "simulator",
+    "check": "verilator --version",
+    "version_regex": "Verilator\\s+(\\S+)",
+    "latest_version": "5.024",
+    "install": {
+      "linux": "sudo apt install verilator -y",
+      "windows": "echo Install Verilator manually from https://verilator.org/guide/latest/install.html",
+      "macos": "brew install verilator"
+    },
+    "uninstall": {
+      "linux": "sudo apt remove verilator -y",
+      "windows": "echo Uninstall Verilator manually",
+      "macos": "brew uninstall verilator"
+    },
+    "homepage": "https://www.veripool.org/verilator/"
+  },
+  "magic": {
+    "description": "VLSI layout tool used for IC design",
+    "category": "layout",
+    "check": "magic -dnull -noconsole --version",
+    "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
+    "latest_version": "8.3",
+    "install": {
+      "linux": "sudo apt install magic -y",
+      "windows": "echo Magic is not available on Windows natively",
+      "macos": "brew install magic"
+    },
+    "uninstall": {
+      "linux": "sudo apt remove magic -y",
+      "windows": "echo N/A",
+      "macos": "brew uninstall magic"
+    },
+    "homepage": "http://opencircuitdesign.com/magic/"
+  }
+}
