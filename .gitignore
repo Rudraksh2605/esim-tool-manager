@@ -1,4 +1,4 @@
-*
+
 
 !*/
 
@@ -6,27 +6,9 @@
 !README.md
 !LICENSE
 
-# Un-ignore Phase 1 files
-!setup.py
-!requirements.txt
-!tool_manager/__init__.py
-!tool_manager/__main__.py
-!tool_manager/main.py
-!tool_manager/cli/__init__.py
-!tool_manager/core/__init__.py
-!tool_manager/utils/__init__.py
-!tool_manager/config/__init__.py
-!tool_manager/config/tools.json
-!tool_manager/utils/os_utils.py
-!tool_manager/utils/logger.py
-!tool_manager/core/checker.py
-!tool_manager/core/installer.py
-!tool_manager/core/updater.py
-!tool_manager/cli/commands.py
-!tests/test_tool_manager.py
 
 
-# Ignore typical Python build/runtime directories (re-ignoring them after !*/)
+
 __pycache__/
 *.py[cod]
 *$py.class
