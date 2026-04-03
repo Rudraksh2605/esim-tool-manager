@@ -20,6 +20,7 @@
 !tool_manager/utils/os_utils.py
 !tool_manager/utils/logger.py
 !tool_manager/core/checker.py
+!tool_manager/core/installer.py
 
 
 # Ignore typical Python build/runtime directories (re-ignoring them after !*/)
