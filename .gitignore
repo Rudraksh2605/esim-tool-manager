@@ -1,0 +1,34 @@
+# Ignore all files by default
+*
+
+# Un-ignore directories so git can traverse them
+!*/
+
+# Un-ignore essential root files
+!.gitignore
+!README.md
+!LICENSE
+
+# Un-ignore Phase 1 files
+!setup.py
+!requirements.txt
+!tool_manager/__init__.py
+!tool_manager/__main__.py
+!tool_manager/main.py
+!tool_manager/cli/__init__.py
+!tool_manager/core/__init__.py
+!tool_manager/utils/__init__.py
+!tool_manager/config/__init__.py
+
+# Ignore typical Python build/runtime directories (re-ignoring them after !*/)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+logs/*
+!logs/.gitkeep
