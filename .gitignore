@@ -1,10 +1,7 @@
-# Ignore all files by default
 *
 
-# Un-ignore directories so git can traverse them
 !*/
 
-# Un-ignore essential root files
 !.gitignore
 !README.md
 !LICENSE
@@ -19,6 +16,10 @@
 !tool_manager/core/__init__.py
 !tool_manager/utils/__init__.py
 !tool_manager/config/__init__.py
+!tool_manager/config/tools.json
+!tool_manager/utils/os_utils.py
+!tool_manager/utils/logger.py
+
 
 # Ignore typical Python build/runtime directories (re-ignoring them after !*/)
 __pycache__/
