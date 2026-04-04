@@ -24,10 +24,16 @@ setup(
         "click>=8.1",
         "rich>=13.0",
         "packaging>=23.0",
+        "customtkinter>=5.2",
+        "Pillow>=10.0",
+        "py7zr>=0.22",
     ],
     entry_points={
         "console_scripts": [
             "esim-tool-manager=tool_manager.main:main",
+        ],
+        "gui_scripts": [
+            "esim-tool-manager-gui=tool_manager.gui.app:main",
         ],
     },
     classifiers=[

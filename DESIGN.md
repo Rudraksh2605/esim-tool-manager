@@ -70,7 +70,7 @@ and extensible.
 - **Rendering**: Rich Console, Table, Panel, and Text for styled output.
 - **Global context**: `--verbose` and `--dry-run` flags propagated via
   `click.Context.obj`.
-- **Commands**: `install`, `check`, `list`, `update`, `status`.
+- **Commands**: `install`, `check`, `list`, `update`, `doctor`, `status`.
 
 ### 3.2 Core Layer
 
@@ -93,6 +93,13 @@ and extensible.
 - Compares against `latest_version` from config using `packaging.version`.
 - Falls back to string comparison for non-PEP 440 versions.
 - Optionally triggers `ToolInstaller.install_tool()` for the update.
+
+#### `core/dependencies.py` — DependencyChecker
+- Verifies system-level prerequisites such as supported platform, Python
+  baseline, writable log directory, and required package managers.
+- Reports per-tool install readiness, including whether the tool can be
+  installed via package manager, direct download, or only manual steps.
+- Feeds the `doctor` CLI command for submission-friendly diagnostics.
 
 ### 3.3 Utility Layer
 

@@ -2,17 +2,28 @@
   "ngspice": {
     "description": "Mixed-level/mixed-signal electronic circuit simulator",
     "category": "simulator",
+    "binary_names": ["ngspice.exe", "ngspice"],
     "check": "ngspice -v",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
     "latest_version": "43",
+    "auto_install": true,
     "install": {
       "linux": "sudo apt install ngspice -y",
-      "windows": "winget install --id=ngspice.ngspice -e --accept-package-agreements --accept-source-agreements",
+      "windows": "",
       "macos": "brew install ngspice"
+    },
+    "download": {
+      "windows": {
+        "url": "https://sourceforge.net/projects/ngspice/files/ng-spice-rework/old-releases/43/ngspice-43_64.7z/download",
+        "filename": "ngspice-43_64.7z",
+        "type": "archive_extract",
+        "archive_format": "7z",
+        "bin_subdir": "Spice64\\bin"
+      }
     },
     "uninstall": {
       "linux": "sudo apt remove ngspice -y",
-      "windows": "winget uninstall --id=ngspice.ngspice -e",
+      "windows": "echo Uninstall ngspice from Settings > Apps or Control Panel.",
       "macos": "brew uninstall ngspice"
     },
     "homepage": "https://ngspice.sourceforge.io/"
@@ -20,13 +31,26 @@
   "kicad": {
     "description": "Open-source electronics design automation suite",
     "category": "eda",
+    "binary_names": ["kicad-cli.exe", "kicad-cli"],
+    "path_globs": [
+      "C:\\Program Files\\KiCad\\*\\bin",
+      "C:\\Program Files\\KiCad\\bin"
+    ],
     "check": "kicad-cli version",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
-    "latest_version": "8.0",
+    "latest_version": "9.0.8",
+    "auto_install": true,
     "install": {
       "linux": "sudo apt install kicad -y",
-      "windows": "winget install --id=KiCad.KiCad -e --accept-package-agreements --accept-source-agreements",
+      "windows": "winget install --id=KiCad.KiCad --version 9.0.8 -e --accept-package-agreements --accept-source-agreements",
       "macos": "brew install --cask kicad"
+    },
+    "download": {
+      "windows": {
+        "url": "https://downloads.kicad.org/kicad/windows/explore/stable/download/kicad-9.0.8-x86_64.exe",
+        "filename": "kicad-9.0.8-x86_64.exe",
+        "type": "exe_installer"
+      }
     },
     "uninstall": {
       "linux": "sudo apt remove kicad -y",
@@ -38,17 +62,29 @@
   "ghdl": {
     "description": "Open-source VHDL simulator",
     "category": "simulator",
+    "binary_names": ["ghdl.exe", "ghdl"],
     "check": "ghdl --version",
     "version_regex": "GHDL\\s+(\\S+)",
-    "latest_version": "4.1.0",
+    "latest_version": "6.0.0",
+    "auto_install": true,
+    "manual_install_url": "https://github.com/ghdl/ghdl/releases",
     "install": {
       "linux": "sudo apt install ghdl -y",
-      "windows": "echo Install GHDL manually from https://github.com/ghdl/ghdl/releases",
+      "windows": "",
       "macos": "brew install ghdl"
+    },
+    "download": {
+      "windows": {
+        "url": "https://github.com/ghdl/ghdl/releases/download/v6.0.0/ghdl-mcode-6.0.0-ucrt64.zip",
+        "filename": "ghdl-mcode-6.0.0-ucrt64.zip",
+        "type": "archive_extract",
+        "archive_format": "zip",
+        "bin_subdir": "bin"
+      }
     },
     "uninstall": {
       "linux": "sudo apt remove ghdl -y",
-      "windows": "echo Uninstall GHDL manually",
+      "windows": "",
       "macos": "brew uninstall ghdl"
     },
     "homepage": "https://ghdl.github.io/ghdl/"
@@ -56,17 +92,20 @@
   "verilator": {
     "description": "Open-source Verilog/SystemVerilog simulator and lint system",
     "category": "simulator",
+    "binary_names": ["verilator.exe", "verilator"],
     "check": "verilator --version",
     "version_regex": "Verilator\\s+(\\S+)",
     "latest_version": "5.024",
+    "auto_install": false,
+    "manual_install_url": "https://verilator.org/guide/latest/install.html",
     "install": {
       "linux": "sudo apt install verilator -y",
-      "windows": "echo Install Verilator manually from https://verilator.org/guide/latest/install.html",
+      "windows": "",
       "macos": "brew install verilator"
     },
     "uninstall": {
       "linux": "sudo apt remove verilator -y",
-      "windows": "echo Uninstall Verilator manually",
+      "windows": "",
       "macos": "brew uninstall verilator"
     },
     "homepage": "https://www.veripool.org/verilator/"
@@ -74,17 +113,20 @@
   "magic": {
     "description": "VLSI layout tool used for IC design",
     "category": "layout",
+    "binary_names": ["magic.exe", "magic"],
     "check": "magic -dnull -noconsole --version",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
     "latest_version": "8.3",
+    "auto_install": false,
+    "manual_install_url": "http://opencircuitdesign.com/magic/",
     "install": {
       "linux": "sudo apt install magic -y",
-      "windows": "echo Magic is not available on Windows natively",
+      "windows": "",
       "macos": "brew install magic"
     },
     "uninstall": {
       "linux": "sudo apt remove magic -y",
-      "windows": "echo N/A",
+      "windows": "",
       "macos": "brew uninstall magic"
     },
     "homepage": "http://opencircuitdesign.com/magic/"

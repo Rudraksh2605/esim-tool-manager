@@ -79,6 +79,9 @@ esim-tool-manager update --check-only ngspice
 # Apply an update
 esim-tool-manager update ngspice
 
+# Inspect install prerequisites and local dependencies
+esim-tool-manager doctor
+
 # System status & diagnostics
 esim-tool-manager status
 ```
@@ -219,7 +222,7 @@ Edit `tool_manager/config/tools.json`:
 
 ```bash
 pip install pytest
-pytest tests/ -v
+python -m pytest -q
 ```
 
 All tests use mocked `subprocess.run` calls — no real installations occur during testing.
