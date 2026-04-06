@@ -44,6 +44,7 @@ class ToolDetailPanel(ctk.CTkFrame):
         self._status = "missing"
         self._version = None
         self._progress_overlay = None
+        self._is_busy = False
 
         # ── Header row ───────────────────────────────────────────────
         header = ctk.CTkFrame(self, fg_color="transparent")
@@ -290,30 +291,21 @@ class ToolDetailPanel(ctk.CTkFrame):
         for btn in (self._install_btn, self._uninstall_btn, self._update_btn, self._check_btn):
             btn.configure(state="normal")
 
-    def _show_progress(self, message: str):
-        if self._progress_overlay is None:
-            self._progress_overlay = ProgressOverlay(self, message=message)
-            self._progress_overlay.place(relx=0.5, rely=0.5, anchor="center")
-        else:
-            self._progress_overlay.set_message(message)
-            self._progress_overlay.lift()
+    def _lock_ui(self, message: str):
+        """Disable all buttons and show the overlay."""
+        self._is_busy = True
+        self._disable_buttons()
+        self._progress_overlay = ProgressOverlay(self, message=message)
+        self._progress_overlay.place(relx=0.5, rely=0.5, anchor="center")
 
-    def _set_progress_message(self, message: str):
+    def _unlock_ui(self):
+        """Re-enable buttons and remove the overlay."""
+        self._is_busy = False
+        self._enable_buttons()
         if self._progress_overlay is not None:
-            self._progress_overlay.set_message(message)
-
-    def _update_progress(self, fraction: float, message: str):
-        """Update the real-time progress bar fill and status text together."""
-        if self._progress_overlay is not None:
-            self._progress_overlay.set_progress(fraction)
-            self._progress_overlay.set_message(message)
-
-    def _hide_progress(self):
-        if self._progress_overlay is None:
-            return
-        self._progress_overlay.stop()
-        self._progress_overlay.destroy()
-        self._progress_overlay = None
+            self._progress_overlay.stop()
+            self._progress_overlay.destroy()
+            self._progress_overlay = None
 
     def _update_download_stats(self, downloaded: int, total: int, speed: float):
         """Push live download metrics to the progress overlay."""
@@ -341,14 +333,16 @@ class ToolDetailPanel(ctk.CTkFrame):
             )
 
     def _do_check(self):
-        self._disable_buttons()
+        if self._is_busy:
+            return
+        self._lock_ui(f"Checking {self.tool_name}…")
 
         def worker():
             checker = ToolChecker(self._parent_frame.tools_config)
             return checker.check_tool(self.tool_name)
 
         def done(result):
-            self._enable_buttons()
+            self._unlock_ui()
             self._status = result.status.value
             self._version = result.version
             self._update_badge(result.status.value)
@@ -363,14 +357,15 @@ class ToolDetailPanel(ctk.CTkFrame):
         self._run_bg(worker, done)
 
     def _do_install(self):
-        self._disable_buttons()
-        self._show_progress(f"Preparing {self.tool_name} install...")
+        if self._is_busy:
+            return
+        self._lock_ui(f"Preparing {self.tool_name} install...")
 
         def worker():
             installer = ToolInstaller(self._parent_frame.tools_config)
 
             def status_callback(message: str):
-                self.after(0, lambda m=message: self._set_progress_message(m))
+                self.after(0, lambda m=message: self._progress_overlay.set_message(m) if self._progress_overlay else None)
 
             def progress_callback(downloaded: int, total: int, speed: float = 0.0):
                 self.after(
@@ -385,8 +380,7 @@ class ToolDetailPanel(ctk.CTkFrame):
             )
 
         def done(result):
-            self._hide_progress()
-            self._enable_buttons()
+            self._unlock_ui()
             out = []
             if result.command_executed:
                 out.append(f"Command: {result.command_executed}")

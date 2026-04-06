@@ -3,7 +3,7 @@
     "description": "Mixed-level/mixed-signal electronic circuit simulator",
     "category": "simulator",
     "binary_names": ["ngspice.exe", "ngspice"],
-    "check": "ngspice -v",
+    "check": "ngspice -n -b -v",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
     "latest_version": "43",
     "auto_install": true,

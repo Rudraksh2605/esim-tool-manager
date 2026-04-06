@@ -37,6 +37,8 @@ class DashboardFrame(ctk.CTkFrame):
         self._check_results = {}
         self._tool_cards = {}
         self._is_scanning = False
+        self._is_busy = False
+        self._active_overlay = None
 
         # ── Scrollable container ─────────────────────────────────────
         self._scroll = ctk.CTkScrollableFrame(
@@ -240,21 +242,22 @@ class DashboardFrame(ctk.CTkFrame):
 
     def _handle_install(self, tool_name: str):
         """Install a tool with real-time progress on the overlay."""
-        overlay = ProgressOverlay(self, message=f"Preparing {tool_name}…")
-        overlay.place(relx=0.5, rely=0.5, anchor="center")
+        if self._is_busy:
+            return
+        self._lock_ui(f"Preparing {tool_name}…")
 
         def _worker():
             installer = ToolInstaller(self.tools_config)
 
             def status_cb(msg: str):
-                self.after(0, lambda m=msg: overlay.set_message(m))
+                self.after(0, lambda m=msg: self._active_overlay.set_message(m) if self._active_overlay else None)
 
             def progress_cb(downloaded: int, total: int, speed: float = 0.0):
                 self.after(
                     0,
                     lambda d=downloaded, t=total, s=speed: (
-                        overlay.set_download_stats(d, t, s),
-                        overlay.set_message(f"Downloading {tool_name}…"),
+                        self._active_overlay.set_download_stats(d, t, s) if self._active_overlay else None,
+                        self._active_overlay.set_message(f"Downloading {tool_name}…") if self._active_overlay else None,
                     ),
                 )
 
@@ -265,8 +268,7 @@ class DashboardFrame(ctk.CTkFrame):
             )
 
         def _done(result):
-            overlay.stop()
-            overlay.destroy()
+            self._unlock_ui()
             self._show_action_result(
                 tool_name,
                 "Install Successful" if result.success else "Install Failed",
@@ -386,21 +388,43 @@ class DashboardFrame(ctk.CTkFrame):
 
     def _run_in_thread(self, message, worker_fn, callback_fn):
         """Run a backend operation in a thread, showing overlay, then callback on main thread."""
-        overlay = ProgressOverlay(self, message=message)
-        overlay.place(relx=0.5, rely=0.5, anchor="center")
+        if self._is_busy:
+            return
+        self._lock_ui(message)
 
         def _worker():
             result = worker_fn()
             self.after(0, lambda: _done(result))
 
         def _done(result):
-            overlay.stop()
-            overlay.destroy()
+            self._unlock_ui()
             callback_fn(result)
             # Trigger a re-scan after action
             self._start_scan()
 
         threading.Thread(target=_worker, daemon=True).start()
+
+    def _lock_ui(self, message: str):
+        """Disable all interactive elements while a task is running."""
+        self._is_busy = True
+        self._scan_btn.configure(state="disabled")
+        for card in self._tool_cards.values():
+            card.set_busy(True)
+        
+        self._active_overlay = ProgressOverlay(self, message=message)
+        self._active_overlay.place(relx=0.5, rely=0.5, anchor="center")
+
+    def _unlock_ui(self):
+        """Re-enable the UI."""
+        self._is_busy = False
+        self._scan_btn.configure(state="normal")
+        for card in self._tool_cards.values():
+            card.set_busy(False)
+        
+        if hasattr(self, "_active_overlay") and self._active_overlay:
+            self._active_overlay.stop()
+            self._active_overlay.destroy()
+            self._active_overlay = None
 
     def _show_action_result(self, tool_name, title, message, success):
         """Show a brief result dialog."""

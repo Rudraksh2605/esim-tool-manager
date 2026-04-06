@@ -461,6 +461,18 @@ class ToolCard(ctk.CTkFrame):
             text_color=COLORS["accent_green"] if version else COLORS["text_dim"],
         )
 
+    def set_busy(self, busy: bool):
+        """Enable or disable all action buttons on the card."""
+        state = "disabled" if busy else "normal"
+        # Find all CTkButton children in the internal frames
+        def _set_state(parent):
+            for child in parent.winfo_children():
+                if isinstance(child, ctk.CTkButton):
+                    child.configure(state=state)
+                elif isinstance(child, (ctk.CTkFrame, ctk.CTkScrollableFrame)):
+                    _set_state(child)
+        _set_state(self)
+
     def _on_enter(self, event=None):
         self.configure(fg_color=COLORS["bg_card_hover"])
 
