@@ -781,6 +781,64 @@ def add_to_user_path(directory: str) -> Tuple[bool, str]:
         return False, f"Error updating PATH: {exc}"
 
 
+def remove_from_user_path(directory: str) -> Tuple[bool, str]:
+    """Remove a directory from the user's PATH."""
+    normalized_dir = str(Path(directory).expanduser())
+    
+    try:
+        get_result = subprocess.run(
+            [
+                "powershell",
+                "-Command",
+                '[Environment]::GetEnvironmentVariable("Path", "User")',
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        current_path = get_result.stdout.strip() or ""
+        if not current_path:
+            return True, "PATH is empty, nothing to remove"
+
+        dir_lower = normalized_dir.lower().rstrip("\\")
+        entries = [
+            part.strip()
+            for part in current_path.split(";")
+            if part.strip()
+        ]
+        
+        # Filter out the matching directory (case-insensitive)
+        new_entries = [
+            part for part in entries
+            if part.rstrip("\\").lower() != dir_lower
+        ]
+        
+        if len(new_entries) == len(entries):
+            return True, f"'{normalized_dir}' was not in PATH."
+
+        new_path = ";".join(new_entries)
+        escaped_path = new_path.replace("'", "''")
+        
+        set_result = subprocess.run(
+            [
+                "powershell",
+                "-Command",
+                f"[Environment]::SetEnvironmentVariable('Path', '{escaped_path}', 'User')",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        if set_result.returncode == 0:
+            _broadcast_environment_change()
+            return True, f"Removed '{normalized_dir}' from user PATH."
+
+        return False, f"Failed to update PATH: {set_result.stderr.strip()}"
+    except Exception as exc:
+        return False, f"Error updating PATH: {exc}"
+
+
 def cleanup_download(filename: str) -> None:
     """Remove a downloaded file if it still exists."""
 

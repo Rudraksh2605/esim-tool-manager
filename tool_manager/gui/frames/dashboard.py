@@ -296,47 +296,83 @@ class DashboardFrame(ctk.CTkFrame):
         )
 
     def _do_uninstall(self, tool_name: str):
-        """Execute the platform-specific uninstall command."""
+        """Execute the platform-specific uninstall command or local cleanup."""
+        import shutil
         import subprocess
         from tool_manager.utils.os_utils import get_platform_key
         from tool_manager.core.installer import InstallResult
+        from tool_manager.utils.downloader import TOOLS_DIR, remove_from_user_path, find_binary_directory
 
         tool_cfg = self.tools_config.get(tool_name, {})
-        uninstall_cmds = tool_cfg.get("uninstall", {})
         platform_key = get_platform_key()
+
+        local_dir = TOOLS_DIR / tool_name
+        messages = []
+        is_success = False
+
+        if local_dir.exists():
+            # Try to remove it from PATH first
+            bin_dir = find_binary_directory(local_dir, tool_cfg.get("binary_names", []))
+            if bin_dir and bin_dir.exists():
+                _, path_msg = remove_from_user_path(str(bin_dir))
+                messages.append(path_msg)
+
+            try:
+                shutil.rmtree(local_dir, ignore_errors=True)
+                if not local_dir.exists():
+                    messages.append(f"Removed local directory for '{tool_name}'.")
+                    is_success = True
+                else:
+                    messages.append(f"Could not completely delete directory: {local_dir}")
+            except Exception as e:
+                messages.append(f"Failed to remove local directory: {e}")
+
+        uninstall_cmds = tool_cfg.get("uninstall", {})
         cmd = uninstall_cmds.get(platform_key, "")
 
-        if not cmd:
+        # Only execute command if it's not a fake echo prompt
+        if cmd and not cmd.strip().startswith("echo"):
+            try:
+                result = subprocess.run(
+                    cmd, capture_output=True, text=True, timeout=300, shell=True
+                )
+                cmd_success = result.returncode == 0
+                if cmd_success:
+                    messages.append(f"Uninstalled '{tool_name}' via system command.")
+                else:
+                    messages.append(f"System uninstall failed (exit {result.returncode}). See logs.")
+                
+                return InstallResult(
+                    tool_name=tool_name,
+                    success=is_success or cmd_success,
+                    message="\n".join(messages),
+                    command_executed=cmd,
+                    stdout=result.stdout,
+                    stderr=result.stderr,
+                    return_code=result.returncode,
+                )
+            except Exception as exc:
+                messages.append(f"Uninstall command crashed: {exc}")
+                return InstallResult(
+                    tool_name=tool_name,
+                    success=is_success,
+                    message="\n".join(messages),
+                )
+
+        if not is_success:
+            if not cmd:
+                messages.append(f"No uninstall command configured for '{tool_name}'.")
             return InstallResult(
                 tool_name=tool_name,
                 success=False,
-                message=f"No uninstall command for '{tool_name}' on {platform_key}.",
+                message="\n".join(messages) or "Uninstall failed.",
             )
 
-        try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=300, shell=True
-            )
-            success = result.returncode == 0
-            return InstallResult(
-                tool_name=tool_name,
-                success=success,
-                message=(
-                    f"Uninstalled '{tool_name}'."
-                    if success
-                    else f"Uninstall may have failed (exit {result.returncode})."
-                ),
-                command_executed=cmd,
-                stdout=result.stdout,
-                stderr=result.stderr,
-                return_code=result.returncode,
-            )
-        except Exception as exc:
-            return InstallResult(
-                tool_name=tool_name,
-                success=False,
-                message=str(exc),
-            )
+        return InstallResult(
+            tool_name=tool_name,
+            success=True,
+            message="\n".join(messages),
+        )
 
     def _handle_update(self, tool_name: str):
         self._run_in_thread(
