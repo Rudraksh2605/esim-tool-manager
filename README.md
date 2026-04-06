@@ -3,9 +3,9 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-> **Production-grade CLI tool manager for the eSim electronic circuit simulation ecosystem.**
+> **Production-grade CLI and GUI tool manager for the eSim electronic circuit simulation ecosystem.**
 
-Automate the installation, version checking, dependency auditing, and updating of external EDA tools such as **Ngspice**, **KiCad**, **GHDL**, **Verilator**, and **Magic** — from one unified command-line interface.
+Automate the installation, version checking, dependency auditing, updating, and removal of external EDA tools such as **Ngspice**, **KiCad**, **GHDL**, **Verilator**, and **Magic** — from one unified command-line interface or dark-themed desktop dashboard.
 
 ---
 
@@ -13,9 +13,12 @@ Automate the installation, version checking, dependency auditing, and updating o
 
 | Feature | Description |
 |---|---|
-| **Multi-tool management** | Install, check, update, and list tools from a single CLI |
+| **Multi-tool management** | Install, check, update, and list tools from a single CLI or GUI |
+| **Modern GUI Dashboard** | Sleek CustomTkinter-based interface for intuitive point-and-click management |
+| **Robust Downloads** | Advanced download engine with SourceForge redirect handling and real-time progress |
+| **Complete Uninstallation**| Safely remove tools and automatically clean up system PATH variables |
 | **Cross-platform** | Windows, Linux, and macOS with OS-specific commands |
-| **Rich output** | Colored tables, panels, and status icons via [Rich](https://github.com/Textualize/rich) |
+| **Rich CLI output** | Colored tables, panels, and status icons via [Rich](https://github.com/Textualize/rich) |
 | **Extensible registry** | Add new tools by editing `tools.json` — zero code changes |
 | **Dry-run mode** | Preview commands before execution (`--dry-run`) |
 | **Verbose logging** | Dual-output logging (console + rotating file) with `-v` |
@@ -46,7 +49,25 @@ After installation the `esim-tool-manager` command is available globally in the 
 
 ---
 
-## 🚀 Usage
+## 🖼️ Desktop GUI
+
+The eSim Tool Manager comes with a fully-featured, modern Desktop GUI built with [CustomTkinter](https://customtkinter.tomschimansky.com/). It provides an interactive dashboard for managing your EDA tools without needing the command line.
+
+**Key GUI Features:**
+- **Real-Time Status Dashboard:** View which tools are installed and their current versions at a glance.
+- **Asynchronous Operations:** Installations, uninstalls, and updates run on background threads, ensuring the UI remains highly responsive.
+- **Smart Download Engine:** Experience true progress bars showing download percentage and megabytes transferred, natively bypassing complex SourceForge redirects.
+- **Clean Uninstallation:** One-click removal of tools that automatically cleans up their associated system `PATH` environment variables.
+- **Integrated Diagnostics:** Inspect system dependencies and view detailed application logs directly inside the app interface.
+
+You can launch the GUI dashboard at any time using:
+```bash
+esim-tool-manager-gui
+```
+
+---
+
+## 🚀 Command-Line Interface (CLI) Usage
 
 ### Global flags
 
@@ -55,7 +76,7 @@ After installation the `esim-tool-manager` command is available globally in the 
 | `-v` / `--verbose` | Show DEBUG-level output on console |
 | `--dry-run` | Print commands without executing |
 
-### Commands
+### CLI Commands
 
 ```bash
 # List all registered tools
@@ -119,6 +140,12 @@ esim-tool-manager/
 │   │   ├── __init__.py
 │   │   └── commands.py          # Click CLI group & commands
 │   │
+│   ├── gui/
+│   │   ├── __init__.py
+│   │   ├── app.py               # CustomTkinter GUI main application
+│   │   ├── widgets.py           # Custom UI components & dialogs
+│   │   └── frames/              # Dashboard views and screens
+│   │
 │   ├── core/
 │   │   ├── __init__.py
 │   │   ├── checker.py           # Version checking & status detection
@@ -149,6 +176,7 @@ esim-tool-manager/
 
 | Module | Responsibility |
 |---|---|
+| `gui/app.py` & `widgets.py` | Desktop dashboard with async progress handling and tool management screens |
 | `cli/commands.py` | Parses user commands, delegates to core modules, renders output |
 | `core/checker.py` | Runs check commands, extracts versions, returns structured results |
 | `core/installer.py` | Selects OS-specific install command, executes via subprocess |
@@ -157,7 +185,7 @@ esim-tool-manager/
 | `utils/logger.py` | Configures dual-handler logging with rotation |
 | `config/tools.json` | Declarative tool registry — add tools here without code changes |
 
-### Execution Flow
+### CLI Execution Flow
 
 ```
 User CLI Input
