@@ -343,9 +343,9 @@ class App(ctk.CTk):
 # ── Entry Point ──────────────────────────────────────────────────────────────
 
 
-def main():
+def main(verbose: bool = False):
     """Launch the eSim Tool Manager GUI."""
-    setup_logging(verbose=False)
+    setup_logging(verbose=verbose)
     app = App()
     app.mainloop()
 

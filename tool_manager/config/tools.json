@@ -38,18 +38,19 @@
     ],
     "check": "kicad-cli version",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
-    "latest_version": "9.0.8",
+    "latest_version": "9.0.1",
     "auto_install": true,
     "install": {
       "linux": "sudo apt install kicad -y",
-      "windows": "winget install --id=KiCad.KiCad --version 9.0.8 -e --accept-package-agreements --accept-source-agreements",
+      "windows": "winget install --id=KiCad.KiCad -e --accept-package-agreements --accept-source-agreements",
       "macos": "brew install --cask kicad"
     },
     "download": {
       "windows": {
-        "url": "https://downloads.kicad.org/kicad/windows/explore/stable/download/kicad-9.0.8-x86_64.exe",
-        "filename": "kicad-9.0.8-x86_64.exe",
-        "type": "exe_installer"
+        "url": "https://kicad-downloads.s3.cern.ch/windows/stable/kicad-9.0.1-x86_64.exe",
+        "filename": "kicad-9.0.1-x86_64.exe",
+        "type": "exe_installer",
+        "silent_args": "--mode unattended"
       }
     },
     "uninstall": {

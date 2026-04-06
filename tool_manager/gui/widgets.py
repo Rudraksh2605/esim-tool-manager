@@ -472,43 +472,139 @@ class ToolCard(ctk.CTkFrame):
 
 
 class ProgressOverlay(ctk.CTkFrame):
-    """A semi-transparent overlay with a progress bar and status text."""
+    """
+    A rich download-progress panel with real-time percentage, speed,
+    downloaded/total size, and a determinate progress bar.
+    """
 
     def __init__(self, master, message: str = "Working…", **kwargs):
         super().__init__(
             master,
-            fg_color=("gray90", "#0f1117"),
-            corner_radius=16,
-            border_width=1,
+            fg_color=COLORS["bg_card"],
+            corner_radius=18,
+            border_width=2,
             border_color=COLORS["accent_blue"],
             **kwargs,
         )
 
-        self._msg_var = ctk.StringVar(value=message)
+        self._is_determinate = False
 
+        # ── Inner container ──────────────────────────────────────────
         inner = ctk.CTkFrame(self, fg_color="transparent")
-        inner.pack(expand=True, padx=30, pady=20)
+        inner.pack(expand=True, fill="both", padx=28, pady=20)
 
+        # ── Row 1: Large percentage + speed ──────────────────────────
+        top_row = ctk.CTkFrame(inner, fg_color="transparent")
+        top_row.pack(fill="x", pady=(0, 6))
+
+        # Big percentage number
+        self._pct_var = ctk.StringVar(value="0%")
+        self._pct_label = ctk.CTkLabel(
+            top_row,
+            textvariable=self._pct_var,
+            font=ctk.CTkFont(family="Segoe UI", size=36, weight="bold"),
+            text_color=COLORS["accent_blue"],
+        )
+        self._pct_label.pack(side="left")
+
+        # Speed + size column on the right
+        stats_col = ctk.CTkFrame(top_row, fg_color="transparent")
+        stats_col.pack(side="right", anchor="e")
+
+        # Speed
+        self._speed_var = ctk.StringVar(value="⚡ 0.00 MB/s")
+        self._speed_label = ctk.CTkLabel(
+            stats_col,
+            textvariable=self._speed_var,
+            font=ctk.CTkFont(family="Cascadia Code", size=14, weight="bold"),
+            text_color=COLORS["accent_green"],
+        )
+        self._speed_label.pack(anchor="e")
+
+        # Downloaded / Total
+        self._size_var = ctk.StringVar(value="0.0 / 0.0 MB")
+        self._size_label = ctk.CTkLabel(
+            stats_col,
+            textvariable=self._size_var,
+            font=ctk.CTkFont(family="Cascadia Code", size=12),
+            text_color=COLORS["text_secondary"],
+        )
+        self._size_label.pack(anchor="e")
+
+        # ── Row 2: Progress bar ──────────────────────────────────────
         self._progress = ctk.CTkProgressBar(
             inner,
             mode="indeterminate",
             progress_color=COLORS["accent_blue"],
-            width=280,
-            height=6,
+            fg_color=COLORS["border"],
+            width=340,
+            height=12,
+            corner_radius=6,
         )
-        self._progress.pack(pady=(0, 12))
+        self._progress.pack(fill="x", pady=(4, 8))
         self._progress.start()
 
+        # ── Row 3: Status message ────────────────────────────────────
+        self._msg_var = ctk.StringVar(value=message)
         self._label = ctk.CTkLabel(
             inner,
             textvariable=self._msg_var,
-            font=ctk.CTkFont(family="Segoe UI", size=14),
-            text_color=COLORS["text_primary"],
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=COLORS["text_dim"],
+            wraplength=340,
         )
-        self._label.pack()
+        self._label.pack(fill="x")
+
+    # ── Public API ───────────────────────────────────────────────────
 
     def set_message(self, message: str):
+        """Update the bottom status text."""
         self._msg_var.set(message)
+
+    def set_progress(self, value: float):
+        """Set progress bar to a value (0.0–1.0). Auto-switches to determinate."""
+        if not self._is_determinate:
+            self._is_determinate = True
+            self._progress.stop()
+            self._progress.configure(mode="determinate")
+        clamped = max(0.0, min(1.0, value))
+        self._progress.set(clamped)
+        self._pct_var.set(f"{int(clamped * 100)}%")
+
+    def set_speed(self, speed_bytes_per_sec: float):
+        """Update the speed display."""
+        speed_mb = speed_bytes_per_sec / (1024 * 1024)
+        if speed_mb >= 1.0:
+            self._speed_var.set(f"⚡ {speed_mb:.2f} MB/s")
+        else:
+            speed_kb = speed_bytes_per_sec / 1024
+            self._speed_var.set(f"⚡ {speed_kb:.0f} KB/s")
+
+    def set_size(self, downloaded: int, total: int):
+        """Update the downloaded / total display."""
+        dl_mb = downloaded / (1024 * 1024)
+        if total > 0:
+            total_mb = total / (1024 * 1024)
+            self._size_var.set(f"{dl_mb:.1f} / {total_mb:.1f} MB")
+        else:
+            self._size_var.set(f"{dl_mb:.1f} MB")
+
+    def set_download_stats(self, downloaded: int, total: int, speed: float):
+        """Convenience: update progress bar, speed, and size in one call."""
+        if total > 0:
+            self.set_progress(downloaded / total)
+        self.set_speed(speed)
+        self.set_size(downloaded, total)
+
+    def reset_to_indeterminate(self):
+        """Switch back to spinning indeterminate mode."""
+        self._is_determinate = False
+        self._pct_var.set("0%")
+        self._speed_var.set("⚡ 0.00 MB/s")
+        self._size_var.set("0.0 / 0.0 MB")
+        self._progress.configure(mode="indeterminate")
+        self._progress.start()
 
     def stop(self):
         self._progress.stop()
+

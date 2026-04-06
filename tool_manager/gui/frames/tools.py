@@ -302,12 +302,24 @@ class ToolDetailPanel(ctk.CTkFrame):
         if self._progress_overlay is not None:
             self._progress_overlay.set_message(message)
 
+    def _update_progress(self, fraction: float, message: str):
+        """Update the real-time progress bar fill and status text together."""
+        if self._progress_overlay is not None:
+            self._progress_overlay.set_progress(fraction)
+            self._progress_overlay.set_message(message)
+
     def _hide_progress(self):
         if self._progress_overlay is None:
             return
         self._progress_overlay.stop()
         self._progress_overlay.destroy()
         self._progress_overlay = None
+
+    def _update_download_stats(self, downloaded: int, total: int, speed: float):
+        """Push live download metrics to the progress overlay."""
+        if self._progress_overlay is not None:
+            self._progress_overlay.set_download_stats(downloaded, total, speed)
+            self._progress_overlay.set_message(f"Downloading {self.tool_name}…")
 
     # ── Actions ──────────────────────────────────────────────────────
 
@@ -360,19 +372,11 @@ class ToolDetailPanel(ctk.CTkFrame):
             def status_callback(message: str):
                 self.after(0, lambda m=message: self._set_progress_message(m))
 
-            def progress_callback(downloaded: int, total: int):
-                if total > 0:
-                    percent = int((downloaded / total) * 100)
-                    downloaded_mb = downloaded / (1024 * 1024)
-                    total_mb = total / (1024 * 1024)
-                    message = (
-                        f"Downloading {self.tool_name}... "
-                        f"{percent}% ({downloaded_mb:.1f}/{total_mb:.1f} MB)"
-                    )
-                else:
-                    downloaded_mb = downloaded / (1024 * 1024)
-                    message = f"Downloading {self.tool_name}... {downloaded_mb:.1f} MB"
-                self.after(0, lambda m=message: self._set_progress_message(m))
+            def progress_callback(downloaded: int, total: int, speed: float = 0.0):
+                self.after(
+                    0,
+                    lambda d=downloaded, t=total, s=speed: self._update_download_stats(d, t, s),
+                )
 
             return installer.install_tool(
                 self.tool_name,

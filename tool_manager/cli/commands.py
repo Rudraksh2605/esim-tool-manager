@@ -90,12 +90,51 @@ def cli(ctx: click.Context, verbose: bool, dry_run: bool) -> None:
 def install(ctx: click.Context, tool: str) -> None:
     """Install a managed tool."""
 
+    from rich.progress import Progress, BarColumn, DownloadColumn, TransferSpeedColumn, TextColumn
+
     installer = ToolInstaller(_load_tools_config(), dry_run=ctx.obj["dry_run"])
 
     console.print()
-    with console.status(f"[bold cyan]Installing {tool}...[/]", spinner="dots"):
-        result = installer.install_tool(tool)
 
+    # --- shared state for the progress bar callback ---
+    _progress_ctx: dict = {}
+
+    def _progress_callback(downloaded: int, total: int, speed: float) -> None:
+        """Called from the download loop with bytes downloaded, total, and speed."""
+        p = _progress_ctx.get("progress")
+        tid = _progress_ctx.get("task_id")
+        if p is None or tid is None:
+            return
+        if total > 0:
+            p.update(tid, completed=downloaded, total=total)
+        else:
+            p.update(tid, completed=downloaded)
+
+    def _status_callback(message: str) -> None:
+        console.print(f"  [dim]»[/] {message}")
+
+    progress = Progress(
+        TextColumn("[bold cyan]{task.description}"),
+        BarColumn(bar_width=30),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        console=console,
+        transient=False,
+    )
+
+    with progress:
+        task_id = progress.add_task(f"Installing {tool}", total=None)
+        _progress_ctx["progress"] = progress
+        _progress_ctx["task_id"] = task_id
+        result = installer.install_tool(
+            tool,
+            status_callback=_status_callback,
+            progress_callback=_progress_callback,
+        )
+        progress.update(task_id, completed=progress.tasks[task_id].total or 0)
+
+    console.print()
     if result.success:
         console.print(
             Panel(

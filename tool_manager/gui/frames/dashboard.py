@@ -239,16 +239,47 @@ class DashboardFrame(ctk.CTkFrame):
     # ──────────────────────────────────────────────────────────────────
 
     def _handle_install(self, tool_name: str):
-        self._run_in_thread(
-            f"Installing {tool_name}…",
-            lambda: ToolInstaller(self.tools_config).install_tool(tool_name),
-            lambda result: self._show_action_result(
+        """Install a tool with real-time progress on the overlay."""
+        overlay = ProgressOverlay(self, message=f"Preparing {tool_name}…")
+        overlay.place(relx=0.5, rely=0.5, anchor="center")
+
+        def _worker():
+            installer = ToolInstaller(self.tools_config)
+
+            def status_cb(msg: str):
+                self.after(0, lambda m=msg: overlay.set_message(m))
+
+            def progress_cb(downloaded: int, total: int, speed: float = 0.0):
+                self.after(
+                    0,
+                    lambda d=downloaded, t=total, s=speed: (
+                        overlay.set_download_stats(d, t, s),
+                        overlay.set_message(f"Downloading {tool_name}…"),
+                    ),
+                )
+
+            return installer.install_tool(
+                tool_name,
+                status_callback=status_cb,
+                progress_callback=progress_cb,
+            )
+
+        def _done(result):
+            overlay.stop()
+            overlay.destroy()
+            self._show_action_result(
                 tool_name,
                 "Install Successful" if result.success else "Install Failed",
                 result.message,
                 result.success,
-            ),
-        )
+            )
+            self._start_scan()
+
+        def _thread():
+            result = _worker()
+            self.after(0, lambda: _done(result))
+
+        threading.Thread(target=_thread, daemon=True).start()
 
     def _handle_uninstall(self, tool_name: str):
         self._run_in_thread(
