@@ -205,32 +205,6 @@ The tests cover:
 - downloader helpers
 - CLI command behavior
 
-## Generate PDF Documents
-
-The submission PDFs can be regenerated with:
-
-```bash
-python docs/generate_pdfs.py
-```
-
-If `reportlab` is not already installed in your environment:
-
-```bash
-pip install reportlab
-```
-
-## Suggested Demo Flow
-
-For a 5-10 minute presentation/demo, use this flow:
-
-1. Introduce the problem: eSim depends on external tools and manual setup is tedious.
-2. Show the tool registry in `tools.json`.
-3. Run `python -m tool_manager doctor`.
-4. Run `python -m tool_manager install ngspice`.
-5. Run `python -m tool_manager check ngspice`.
-6. Open the GUI and show the same workflow visually.
-7. Close by showing modular design and future extensibility.
-
 ## Deliverables Mapping
 
 ### 1. Design Document
@@ -238,7 +212,6 @@ For a 5-10 minute presentation/demo, use this flow:
 The detailed design document is available in:
 
 - `DESIGN.md`
-- `docs/eSim_Tool_Manager_Project_Documentation.pdf`
 
 ### 2. Code Implementation
 
@@ -261,32 +234,4 @@ Execution instructions are included in this README under:
 - How To Run
 - How To Test
 
-### 4. Presentation
-
-An optional presentation flow is included in this README and expanded in the design document appendix.
-
-## Evaluation Criteria Alignment
-
-- Functionality: installation, diagnostics, checking, and GUI/CLI flows are implemented
-- Design: modular service-oriented structure with config-driven tool registry
-- Documentation: README plus detailed project document and PDF exports
-- Creativity: direct-download handling, archive install support, PATH registration, and dual UI model
-- Code Quality: Python package structure, dataclasses, separation of concerns, and test coverage
-
-## Submission Checklist
-
-Before submitting, ensure the following:
-
-1. Push this project to a private GitHub repository.
-2. Grant access to the GitHub user:
-   - `Eyantra698Sumanto`
-3. Share the repository link and report by email to:
-   - `contact-esim@fossee.in`
-4. Use the email subject line exactly as requested:
-   - `eSim Summer Fellowship 2026 Submission Task 5`
-
-## Notes
-
-- The project currently prioritizes Windows automation because that is where the prototype install flow was actively implemented and validated.
-- Some tools are still marked as manual-install on native Windows due upstream distribution limitations.
-- The architecture is intentionally modular so additional tools and platforms can be added with minimal code changes.
+ added with minimal code changes.
