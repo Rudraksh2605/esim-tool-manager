@@ -1,190 +1,489 @@
-# eSim Tool Manager — Design Document
+# eSim Tool Manager
+## Project Documentation and Design Report
 
-## 1. Overview
+## 1. Introduction
 
-The eSim Tool Manager is a command-line application built in Python that
-automates the lifecycle management of external EDA (Electronic Design
-Automation) tools required by the eSim platform. It follows the architectural
-patterns of mature package managers (apt, pip, brew) while remaining lightweight
-and extensible.
+### 1.1 Objective
 
----
+The goal of this project is to build an Automated Tool Manager for eSim that reduces the manual effort involved in downloading, installing, verifying, and managing external EDA tools. The prototype is implemented in Python and designed to be modular, extensible, and easy to demonstrate.
 
-## 2. System Architecture
+### 1.2 Motivation
 
+eSim depends on several external tools such as Ngspice, KiCad, GHDL, Verilator, and Magic. Each tool has different installation methods, version-reporting formats, and operating-system specific behavior. Managing these manually creates problems such as:
+
+- inconsistent versions across systems
+- broken PATH configuration
+- missing dependencies
+- repeated setup work for new users
+- poor visibility into what is installed and what is missing
+
+This project addresses those issues through a unified management layer.
+
+## 2. Requirements Selected
+
+The task required implementing any two requirements. This project intentionally targets:
+
+### 2.1 Tool Installation Management
+
+- install metadata is stored in a declarative JSON registry
+- tools can be installed through direct download, archive extraction, or package-manager commands
+- Windows install flow can update the user PATH automatically
+- install status is verified after execution
+
+### 2.2 Dependency Checker
+
+- the `doctor` command inspects environment readiness
+- the system reports required package managers and missing prerequisites
+- unsupported or manual-install cases are clearly surfaced to the user
+
+### 2.3 Bonus Coverage
+
+The prototype also partially addresses:
+
+- Configuration Handling
+- Update and Upgrade System
+- User Interface
+
+## 3. Scope of the Prototype
+
+This repository is a proof-of-concept submission, not a complete production package manager. The current scope includes:
+
+- tool registry and tool metadata management
+- direct install support for selected tools
+- version and availability checks
+- dependency diagnostics
+- CLI workflow
+- GUI workflow
+- logging and test coverage
+
+The prototype has strongest support on Windows because the install flow was actively implemented and verified there.
+
+## 4. High-Level Architecture
+
+The system follows a layered architecture to keep concerns separate.
+
+```text
+User
+ |-- CLI (Click + Rich)
+ |-- GUI (CustomTkinter)
+        |
+        v
+Core Services
+ |-- ToolChecker
+ |-- ToolInstaller
+ |-- ToolUpdater
+ |-- DependencyChecker
+        |
+        v
+Configuration + Utilities
+ |-- tools.json
+ |-- downloader.py
+ |-- os_utils.py
+ |-- logger.py
+        |
+        v
+Operating System + External Tools
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                      USER  (Terminal)                        │
-└──────────────────────┬───────────────────────────────────────┘
-                       │  CLI invocation
-                       ▼
-┌──────────────────────────────────────────────────────────────┐
-│                   CLI Layer  (Click)                         │
-│  cli/commands.py                                             │
-│  • Parses arguments & flags (--verbose, --dry-run)           │
-│  • Dispatches to core modules                                │
-│  • Renders Rich output (tables, panels, icons)               │
-└──────────────────────┬───────────────────────────────────────┘
-                       │
-         ┌─────────────┼─────────────┐
-         ▼             ▼             ▼
-┌──────────────┐ ┌───────────┐ ┌───────────┐
-│  Checker     │ │ Installer │ │ Updater   │
-│  checker.py  │ │installer. │ │ updater.  │
-│              │ │   py      │ │   py      │
-│ • Run check  │ │ • Select  │ │ • Compare │
-│   commands   │ │   OS cmd  │ │   versions│
-│ • Extract    │ │ • Execute │ │ • Trigger │
-│   versions   │ │   install │ │   reinstal│
-│ • Return     │ │ • Dry-run │ │   -lation │
-│   status     │ │   support │ │           │
-└──────┬───────┘ └─────┬─────┘ └─────┬─────┘
-       │               │             │
-       └───────────┬───┘─────────────┘
-                   ▼
-┌──────────────────────────────────────────────────────────────┐
-│                  Utility Layer                               │
-│  utils/os_utils.py     • Platform detection (Enum-based)     │
-│                        • Shell prefix selection              │
-│                        • Admin privilege check               │
-│  utils/logger.py       • Rotating file handler (5 MB × 3)   │
-│                        • Console handler (verbose toggle)    │
-└──────────────────────────────────────────────────────────────┘
-                   │
-                   ▼
-┌──────────────────────────────────────────────────────────────┐
-│                 Configuration Layer                          │
-│  config/tools.json                                           │
-│  • Declarative tool registry                                 │
-│  • Per-platform install/uninstall commands                    │
-│  • Version regex & latest version metadata                   │
-└──────────────────────────────────────────────────────────────┘
+
+### 4.1 Design Principles
+
+- configuration-driven behavior
+- separation of UI from business logic
+- platform-aware execution
+- safe and explicit error reporting
+- minimal change required to add new tools
+
+## 5. Module Breakdown
+
+## 5.1 CLI Layer
+
+Location:
+
+- `tool_manager/cli/commands.py`
+
+Responsibilities:
+
+- parse user commands and flags
+- load tool configuration
+- call the appropriate core service
+- render human-readable output in the terminal
+
+Supported commands include:
+
+- `list`
+- `check`
+- `install`
+- `update`
+- `doctor`
+- `status`
+
+## 5.2 GUI Layer
+
+Location:
+
+- `tool_manager/gui/`
+
+Responsibilities:
+
+- provide a point-and-click tool management interface
+- keep the UI responsive through background threads
+- surface install progress and outputs to the user
+- mirror core features available in the CLI
+
+Important GUI files:
+
+- `app.py`: application bootstrap and navigation
+- `frames/tools.py`: main tool-management workflow
+- `widgets.py`: reusable GUI components
+
+## 5.3 ToolChecker
+
+Location:
+
+- `tool_manager/core/checker.py`
+
+Responsibilities:
+
+- determine whether a tool is available
+- run tool-specific version commands
+- parse version strings with regex
+- detect tools from project-managed install directories when shell PATH is not yet refreshed
+
+Outputs:
+
+- `CheckResult`
+- status: `installed`, `missing`, or `error`
+
+## 5.4 ToolInstaller
+
+Location:
+
+- `tool_manager/core/installer.py`
+
+Responsibilities:
+
+- select the correct installation strategy for the current platform
+- perform direct downloads or command-based installs
+- extract archives when required
+- update PATH after installation
+- verify successful installation
+
+Supported install strategies:
+
+- package-manager command
+- direct executable installer
+- archive extraction (`.zip`, `.7z`)
+- manual-install fallback when automation is not feasible
+
+## 5.5 ToolUpdater
+
+Location:
+
+- `tool_manager/core/updater.py`
+
+Responsibilities:
+
+- compare installed version with target version
+- report whether an update is available
+- reuse installer logic to perform the update flow
+
+## 5.6 DependencyChecker
+
+Location:
+
+- `tool_manager/core/dependencies.py`
+
+Responsibilities:
+
+- verify platform support
+- verify Python runtime compatibility
+- verify logs directory availability
+- check for package managers such as `winget`, `apt`, or `brew`
+- report whether a tool has an automatic install route on the current OS
+
+## 5.7 Downloader and Utility Layer
+
+Locations:
+
+- `tool_manager/utils/downloader.py`
+- `tool_manager/utils/os_utils.py`
+- `tool_manager/utils/logger.py`
+
+Responsibilities:
+
+- resolve binary URLs from landing pages when providers use redirect-based downloads
+- validate that the download is a real binary/archive and not HTML
+- extract archives safely
+- manage process and user PATH updates
+- provide platform-detection helpers
+- write logs to rotating log files
+
+## 5.8 Configuration Registry
+
+Location:
+
+- `tool_manager/config/tools.json`
+
+Responsibilities:
+
+- store tool metadata
+- define install/check/uninstall behavior
+- map platform-specific commands and download sources
+- define version regex and binary hints
+
+This config-driven approach keeps tool support extensible without hardcoding every tool into Python logic.
+
+## 6. Detailed Workflow
+
+## 6.1 Installation Flow
+
+1. The user triggers install through CLI or GUI.
+2. The installer loads the tool entry from `tools.json`.
+3. It chooses a platform-specific strategy:
+   - direct download
+   - archive extraction
+   - package-manager command
+   - manual fallback
+4. The install action runs in the background.
+5. The manager discovers the installed executable location.
+6. The PATH is updated.
+7. The checker verifies tool availability.
+8. The result is shown to the user and written to logs.
+
+## 6.2 Version-Check Flow
+
+1. The user runs `check` or opens the GUI status view.
+2. The checker resolves the tool metadata.
+3. It tries to locate the tool:
+   - from the system PATH
+   - from a project-managed install directory
+   - from configured path hints/globs
+4. It runs the configured check command.
+5. It parses the output using the configured regex.
+6. It returns a structured status result.
+
+## 6.3 Dependency-Check Flow
+
+1. The user runs `doctor`.
+2. The dependency checker examines the environment.
+3. It reports:
+   - supported platform
+   - Python baseline
+   - package-manager availability
+   - automatic-install readiness for each tool
+4. The results are summarized in a readable table.
+
+## 6.4 GUI Install Flow
+
+1. The user clicks `Install`.
+2. The GUI disables the action buttons.
+3. A background thread performs the installation.
+4. The progress overlay updates the current stage:
+   - preparing
+   - downloading
+   - extracting or running installer
+   - verifying
+5. Output is displayed after completion.
+6. The GUI triggers a fresh check to refresh status.
+
+## 7. Data Model
+
+Each tool entry in `tools.json` may contain:
+
+- `description`
+- `category`
+- `binary_names`
+- `check`
+- `version_regex`
+- `latest_version`
+- `install`
+- `download`
+- `uninstall`
+- `path_hints`
+- `path_globs`
+- `homepage`
+
+This data model allows the same codebase to support multiple tools with different install mechanics.
+
+## 8. Current Prototype Capability
+
+### 8.1 Implemented and Validated
+
+- direct archive install for `ngspice`
+- direct installer metadata for `kicad`
+- archive-based metadata for `ghdl`
+- dependency diagnostics through `doctor`
+- CLI and GUI integration
+
+### 8.2 Partially Implemented
+
+- update workflow
+- cross-platform expansion for all tools
+- richer version parsing for every upstream tool
+
+### 8.3 Manual Cases
+
+Some tools still require manual installation on native Windows due upstream distribution limitations or lack of a stable automation source.
+
+## 9. Error Handling Strategy
+
+The project emphasizes graceful failure. Typical failure scenarios include:
+
+- missing tool entry
+- invalid configuration
+- unsupported platform
+- HTML landing page downloaded instead of binary
+- archive extraction failure
+- installer timeout
+- permission problems
+
+The system responds with:
+
+- structured error messages
+- non-crashing CLI output
+- GUI feedback dialogs/output panels
+- logged diagnostic information
+
+## 10. Configuration Handling
+
+The manager updates tool availability through:
+
+- direct executable discovery
+- archive-based local install folders
+- PATH updates in the current process
+- persistent user PATH updates on Windows
+
+This directly supports the requirement that installed tools should work seamlessly with eSim after setup.
+
+## 11. Testing Strategy
+
+Automated tests are provided in `tests/` and cover:
+
+- checker behavior
+- installer behavior
+- downloader helpers
+- dependency diagnostics
+- CLI command paths
+
+The tests use mocks wherever possible so the suite stays safe and repeatable.
+
+Execution:
+
+```bash
+python -m pytest -q
 ```
 
----
+## 12. Instructions for Execution
 
-## 3. Module Responsibilities
+## 12.1 Setup
 
-### 3.1 CLI Layer (`cli/commands.py`)
-- **Framework**: Click with decorators for command/group definitions.
-- **Rendering**: Rich Console, Table, Panel, and Text for styled output.
-- **Global context**: `--verbose` and `--dry-run` flags propagated via
-  `click.Context.obj`.
-- **Commands**: `install`, `check`, `list`, `update`, `doctor`, `status`.
+```bash
+git clone <your-private-repository-url>
+cd esim-tool-manager
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e .
+```
 
-### 3.2 Core Layer
+## 12.2 Run the Prototype
 
-#### `core/checker.py` — ToolChecker
-- Runs the `check` command for a tool via `subprocess.run()`.
-- Captures both stdout and stderr.
-- Extracts version strings using configurable regex patterns.
-- Returns `CheckResult` dataclass with status enum
-  (INSTALLED / MISSING / ERROR).
+CLI:
 
-#### `core/installer.py` — ToolInstaller
-- Looks up the OS-specific install command from `tools.json`.
-- Supports **dry-run** mode (logs the command, skips execution).
-- Handles `subprocess.TimeoutExpired`, `PermissionError`, and generic
-  exceptions.
-- Returns `InstallResult` dataclass with stdout/stderr/return code.
+```bash
+python -m tool_manager --help
+python -m tool_manager doctor
+python -m tool_manager install ngspice
+python -m tool_manager check ngspice
+```
 
-#### `core/updater.py` — ToolUpdater
-- Delegates to `ToolChecker` to obtain the installed version.
-- Compares against `latest_version` from config using `packaging.version`.
-- Falls back to string comparison for non-PEP 440 versions.
-- Optionally triggers `ToolInstaller.install_tool()` for the update.
+GUI:
 
-#### `core/dependencies.py` — DependencyChecker
-- Verifies system-level prerequisites such as supported platform, Python
-  baseline, writable log directory, and required package managers.
-- Reports per-tool install readiness, including whether the tool can be
-  installed via package manager, direct download, or only manual steps.
-- Feeds the `doctor` CLI command for submission-friendly diagnostics.
+```bash
+python -m tool_manager --gui
+```
 
-### 3.3 Utility Layer
+## 12.3 Test the Prototype
 
-#### `utils/os_utils.py`
-- `detect_platform()` → `Platform` enum.
-- `get_platform_key()` → string key for tools.json lookup.
-- `get_shell_command_prefix()` → `["cmd", "/c"]` or `["/bin/sh", "-c"]`.
-- `is_admin()` → bool (Windows via ctypes, Unix via os.geteuid).
-- `get_platform_info()` → dict for diagnostics.
+```bash
+python -m pytest -q
+```
 
-#### `utils/logger.py`
-- Singleton-pattern initialization (idempotent `setup_logging()`).
-- `RotatingFileHandler` at `logs/tool_manager.log` (5 MB, 3 backups).
-- `StreamHandler` respects `--verbose` flag.
-- `get_logger(name)` returns a child logger.
+## 13. Evaluation Criteria Mapping
 
-### 3.4 Configuration (`config/tools.json`)
-- JSON object keyed by tool name.
-- Each entry includes: `description`, `category`, `check`, `version_regex`,
-  `latest_version`, `install` (per-OS), `uninstall` (per-OS), `homepage`.
-- New tools are added here — no Python code changes needed.
+### 13.1 Functionality
 
----
+The prototype supports installation, checking, diagnostics, and basic updates. It demonstrates the core value of an automated manager rather than remaining a static registry.
 
-## 4. Data Flow
+### 13.2 Design
 
-### 4.1 `install <tool>`
-1. CLI parses tool name and `--dry-run` flag.
-2. `ToolInstaller` loads config, selects OS command.
-3. If dry-run: log and return.
-4. Otherwise: `subprocess.run(cmd, shell=True)`.
-5. Capture return code, stdout, stderr → `InstallResult`.
-6. CLI renders success panel or error panel.
+The architecture is modular and layered. UI logic, core services, config, and utilities are separated so the project is easier to maintain and extend.
 
-### 4.2 `check [tool]`
-1. CLI parses optional tool name.
-2. `ToolChecker.check_tool()` or `.check_all()`.
-3. For each tool: run check command → extract version via regex.
-4. Return `CheckResult` with `ToolStatus` enum.
-5. CLI prints icon + version + status line.
+### 13.3 Documentation
 
-### 4.3 `update <tool>`
-1. CLI parses tool name and `--check-only` flag.
-2. `ToolUpdater.check_update()` calls checker, compares versions.
-3. If `--check-only`: return comparison result.
-4. If update available and not check-only: call
-   `ToolInstaller.install_tool()`.
-5. Return `UpdateResult` with action enum.
+The repository includes:
 
-### 4.4 `status`
-1. Gather `get_platform_info()` → diagnostics table.
-2. `ToolChecker.check_all()` → summary table.
-3. Merge with `latest_version` from config.
-4. Render two Rich tables.
+- a practical README
+- a detailed design document
+- PDF exports for submission
 
----
+### 13.4 Creativity
 
-## 5. Error Handling Strategy
+Notable implementation ideas include:
 
-| Error Type | Handler | User Impact |
-|---|---|---|
-| Tool not in config | Early return with message | No crash |
-| Command not found | `FileNotFoundError` → MISSING | Clean status |
-| Timeout | `TimeoutExpired` → ERROR | Clear message |
-| Permission denied | `PermissionError` → ERROR | Suggests elevation |
-| Invalid JSON | `JSONDecodeError` → SystemExit(1) | Immediate feedback |
-| Unexpected | Generic `Exception` → logged + ERROR | Stack in log file |
+- direct-download resolution from landing pages
+- archive-based local installs for Windows tools
+- project-managed binary discovery even before a terminal restart
+- dual-interface access through CLI and GUI
 
----
+### 13.5 Code Quality
 
-## 6. Extensibility Points
+The codebase is organized as a Python package with:
 
-1. **New tools**: Add entry to `tools.json`.
-2. **New platforms**: Add key to each tool's `install`/`uninstall` dict.
-3. **New commands**: Add `@cli.command()` in `commands.py`.
-4. **Custom check logic**: Subclass `ToolChecker` and override
-   `_extract_version()`.
-5. **Plugin system (future)**: Tool definitions could be loaded from
-   multiple JSON files or a plugin directory.
+- dataclass-based result objects
+- focused modules
+- reusable utility helpers
+- automated tests
 
----
+## 14. Limitations
 
-## 7. Testing Strategy
+- the tool coverage is still partial
+- Windows support is stronger than Linux/macOS in the current prototype
+- some version commands are tool-specific and may need refinement
+- update logic currently reuses install logic rather than implementing delta updates
 
-- **Unit tests**: Each core class tested with mocked `subprocess.run`.
-- **Integration tests**: `CliRunner` exercises the full CLI pipeline.
-- **No side effects**: All tests run without installing real software.
-- **Coverage targets**: checker, installer, updater, os_utils, CLI commands.
+## 15. Future Improvements
+
+- add complete cross-platform support for every tool
+- add uninstall manager parity with install manager
+- add richer configuration profiles for eSim integration
+- add remote metadata updates
+- add checksum verification for downloaded binaries
+- add package-source mirroring and retry logic
+- add scheduled update checks
+
+## 16. Optional Presentation Outline
+
+Suggested 5-10 minute presentation flow:
+
+1. Explain the eSim tool-management problem.
+2. State the two primary requirements targeted.
+3. Show the architecture diagram and module split.
+4. Demonstrate `doctor`.
+5. Demonstrate `install ngspice`.
+6. Demonstrate `check ngspice`.
+7. Show the GUI install flow.
+8. Close with future improvements and extensibility.
+
+## 17. Submission Guidelines Checklist
+
+Before final submission:
+
+1. Push the repository to a private GitHub repository.
+2. Grant access to `Eyantra698Sumanto`.
+3. Email the repository link and report to `contact-esim@fossee.in`.
+4. Use the subject line:
+   `eSim Summer Fellowship 2026 Submission Task 5`
+
+## 18. Conclusion
+
+This project demonstrates a practical automated tool manager for eSim with a modular Python implementation, direct installation workflows, dependency diagnostics, version checking, and a dual CLI/GUI interface. It satisfies the requested screening-task goals while remaining extensible for future development.
