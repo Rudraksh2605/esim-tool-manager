@@ -5,270 +5,180 @@
 
 > **Production-grade CLI and GUI tool manager for the eSim electronic circuit simulation ecosystem.**
 
-Automate the installation, version checking, dependency auditing, updating, and removal of external EDA tools such as **Ngspice**, **KiCad**, **GHDL**, **Verilator**, and **Magic** — from one unified command-line interface or dark-themed desktop dashboard.
+The **eSim Tool Manager** streamlines the lifecycle management of external EDA (Electronic Design Automation) tools required by the eSim platform. Whether you prefer a sleek graphical interface or a powerful terminal environment, this manager automates the installation, version auditing, updating, and removal of core tools like **Ngspice**, **KiCad**, **GHDL**, **Verilator**, and **Magic**.
 
 ---
 
-## ✨ Features
+## 🚀 Quick Start Workflow
 
-| Feature | Description |
-|---|---|
-| **Multi-tool management** | Install, check, update, and list tools from a single CLI or GUI |
-| **Modern GUI Dashboard** | Sleek CustomTkinter-based interface for intuitive point-and-click management |
-| **Robust Downloads** | Advanced download engine with SourceForge redirect handling and real-time progress |
-| **Complete Uninstallation**| Safely remove tools and automatically clean up system PATH variables |
-| **Cross-platform** | Windows, Linux, and macOS with OS-specific commands |
-| **Rich CLI output** | Colored tables, panels, and status icons via [Rich](https://github.com/Textualize/rich) |
-| **Extensible registry** | Add new tools by editing `tools.json` — zero code changes |
-| **Dry-run mode** | Preview commands before execution (`--dry-run`) |
-| **Verbose logging** | Dual-output logging (console + rotating file) with `-v` |
-| **Version comparison** | PEP 440–aware update detection via `packaging` |
-| **Graceful errors** | No crashes — every failure produces a clear, actionable message |
+Getting started and setting up your eSim environment has never been easier. Just follow this straightforward workflow:
+
+1. **Check Status**: `esim-tool-manager status` (See what's missing)
+2. **Install Tools**: `esim-tool-manager install <tool_name>` (e.g., `kicad`)
+3. **Verify Setup**: `esim-tool-manager check` (Confirm everything is ready)
+4. **Launch Dashboard**: `esim-tool-manager-gui` (Manage visually from now on)
 
 ---
 
-## 📦 Installation
+## ✨ Key Features
 
+- **Modern GUI Dashboard**: A sleek, dark-themed CustomTkinter-based interface for intuitive point-and-click management.
+- **Unified Command-Line**: Manage everything via a single extensible command (`esim-tool-manager`) with rich, colored terminal output.
+- **Robust Download Engine**: Directly streams files, bypassing complexSourceForge redirects and displaying real-time progress bars.
+- **Automated Configuration**: Safely manages `PATH` environment variables and dependency cleanup automatically behind the scenes.
+- **Cross-Platform Compatibility**: Fully compatible with Windows, macOS, and Linux out of the box with OS-aware execution.
+- **Data-Driven Registry**: Add or modify supported tools simply by editing a JSON file (`tools.json`)—zero Python code changes required.
+
+---
+
+## 📦 Getting Started / Installation
+
+### Prerequisites
+- Python 3.10 or higher
+- Git (for cloning the repository)
+
+### Setup Instructions
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-org/esim-tool-manager.git
+   cd esim-tool-manager
+   ```
+
+2. **Create a virtual environment (Recommended):**
+   This keeps the application's dependencies isolated from your system.
+   ```bash
+   python -m venv .venv
+   ```
+
+3. **Activate the environment:**
+   - **Windows:**
+     ```cmd
+     .venv\Scripts\activate
+     ```
+   - **Linux/macOS:**
+     ```bash
+     source .venv/bin/activate
+     ```
+
+4. **Install the package:**
+   Install the package in editable mode so it registers the global commands.
+   ```bash
+   pip install -e .
+   ```
+
+Check that the installation was successful by running:
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/esim-tool-manager.git
-cd esim-tool-manager
-
-# 2. Create a virtual environment (recommended)
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/macOS
-source .venv/bin/activate
-
-# 3. Install in editable mode
-pip install -e .
+esim-tool-manager --help
 ```
 
-After installation the `esim-tool-manager` command is available globally in the activated environment.
-
 ---
 
-## 🖼️ Desktop GUI
+## 💻 Usage Guide
 
-The eSim Tool Manager comes with a fully-featured, modern Desktop GUI built with [CustomTkinter](https://customtkinter.tomschimansky.com/). It provides an interactive dashboard for managing your EDA tools without needing the command line.
+### 1. Graphical User Interface (GUI)
 
-**Key GUI Features:**
-- **Real-Time Status Dashboard:** View which tools are installed and their current versions at a glance.
-- **Asynchronous Operations:** Installations, uninstalls, and updates run on background threads, ensuring the UI remains highly responsive.
-- **Smart Download Engine:** Experience true progress bars showing download percentage and megabytes transferred, natively bypassing complex SourceForge redirects.
-- **Clean Uninstallation:** One-click removal of tools that automatically cleans up their associated system `PATH` environment variables.
-- **Integrated Diagnostics:** Inspect system dependencies and view detailed application logs directly inside the app interface.
+The included Desktop application provides an interactive dashboard, eliminating the need to use the command line for day-to-day tasks.
 
-You can launch the GUI dashboard at any time using:
+**Launch the GUI:**
 ```bash
 esim-tool-manager-gui
 ```
 
----
+**GUI Highlights:**
+- real-time tracking of tool statuses.
+- Asynchronous installation/uninstallation to keep the interface responsive.
+- Integrated diagnostics to quickly spot missing system packages.
 
-## 🚀 Command-Line Interface (CLI) Usage
+### 2. Command-Line Interface (CLI)
 
-### Global flags
+The CLI acts as the core backbone of the tool manager.
 
-| Flag | Effect |
-|---|---|
-| `-v` / `--verbose` | Show DEBUG-level output on console |
-| `--dry-run` | Print commands without executing |
+**Global Flags:**
+- `-v` / `--verbose` : Show DEBUG-level output on console.
+- `--dry-run` : Print the intended commands without actually executing them.
 
-### CLI Commands
-
+**Common Commands:**
 ```bash
-# List all registered tools
+# Display system status & diagnostics
+esim-tool-manager status
+
+# List all registered tools in the system
 esim-tool-manager list
 
-# Check if all tools are installed
+# Check if tools are correctly installed
 esim-tool-manager check
-
-# Check a specific tool
 esim-tool-manager check ngspice
 
-# Install a tool
-esim-tool-manager install ngspice
+# Install a required tool
+esim-tool-manager install kicad
 
-# Dry-run install (preview only)
-esim-tool-manager --dry-run install kicad
-
-# Check for updates
+# Check for updates and apply them
 esim-tool-manager update --check-only ngspice
-
-# Apply an update
 esim-tool-manager update ngspice
 
-# Inspect install prerequisites and local dependencies
+# Inspect prerequisites and local dependencies
 esim-tool-manager doctor
-
-# System status & diagnostics
-esim-tool-manager status
-```
-
-### Example output
-
-```
-╔════════════════════════════════════════╗
-║           Dependency Check             ║
-║         Platform: windows              ║
-╚════════════════════════════════════════╝
-
-  ✔ ngspice (v39.3)  —  installed
-  ✗ kicad  —  missing
-  ✗ ghdl   —  missing
-  ✗ verilator — missing
-  ✗ magic  —  missing
-
-  1/5 tools installed.
 ```
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture Under the Hood
 
-```
-esim-tool-manager/
-│
-├── tool_manager/                # Main package
-│   ├── __init__.py              # Package metadata & version
-│   ├── __main__.py              # `python -m tool_manager` support
-│   ├── main.py                  # Entry point
-│   │
-│   ├── cli/
-│   │   ├── __init__.py
-│   │   └── commands.py          # Click CLI group & commands
-│   │
-│   ├── gui/
-│   │   ├── __init__.py
-│   │   ├── app.py               # CustomTkinter GUI main application
-│   │   ├── widgets.py           # Custom UI components & dialogs
-│   │   └── frames/              # Dashboard views and screens
-│   │
-│   ├── core/
-│   │   ├── __init__.py
-│   │   ├── checker.py           # Version checking & status detection
-│   │   ├── installer.py         # OS-aware install execution
-│   │   └── updater.py           # Version comparison & update workflow
-│   │
-│   ├── utils/
-│   │   ├── __init__.py
-│   │   ├── os_utils.py          # Platform detection & shell helpers
-│   │   └── logger.py            # Centralized rotating-file logging
-│   │
-│   └── config/
-│       ├── __init__.py
-│       └── tools.json           # Tool registry (extensible)
-│
-├── tests/
-│   └── test_tool_manager.py     # pytest suite with mocked subprocess
-│
-├── logs/
-│   └── tool_manager.log         # Auto-created rotating log
-│
-├── setup.py                     # Package installer with console_scripts
-├── requirements.txt
-└── README.md
-```
+The Tool Manager employs a heavily modular architecture to ensure stability:
 
-### Module Responsibilities
-
-| Module | Responsibility |
-|---|---|
-| `gui/app.py` & `widgets.py` | Desktop dashboard with async progress handling and tool management screens |
-| `cli/commands.py` | Parses user commands, delegates to core modules, renders output |
-| `core/checker.py` | Runs check commands, extracts versions, returns structured results |
-| `core/installer.py` | Selects OS-specific install command, executes via subprocess |
-| `core/updater.py` | Compares installed vs latest version, orchestrates re-install |
-| `utils/os_utils.py` | Detects platform, provides shell prefix, checks admin privileges |
-| `utils/logger.py` | Configures dual-handler logging with rotation |
-| `config/tools.json` | Declarative tool registry — add tools here without code changes |
-
-### CLI Execution Flow
-
-```
-User CLI Input
-     │
-     ▼
-┌─────────────┐
-│ Click CLI    │  ← parses args, flags
-│ commands.py  │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐     ┌──────────────┐
-│ ToolChecker │ ──► │ os_utils.py  │  ← detects platform
-│ checker.py  │     └──────────────┘
-└──────┬──────┘
-       │
-       ▼
-┌──────────────┐    ┌──────────────┐
-│ToolInstaller │ ─► │ subprocess   │  ← runs OS commands
-│ installer.py │    └──────────────┘
-└──────┬───────┘
-       │
-       ▼
-┌──────────────┐
-│ ToolUpdater  │  ← compares versions, triggers re-install
-│ updater.py   │
-└──────────────┘
-       │
-       ▼
-   Rich Output + Log File
-```
+- **CLI / GUI Layers**: Separates the presentation logic (Click for CLI, CustomTkinter for GUI) from the core functionality.
+- **Core Engine Modules**:
+  - `checker.py` tracks versions and installations.
+  - `installer.py` maps and executes OS-specific download/install steps.
+  - `updater.py` handles PEP 440–aware updates.
+- **Configuration Registry (`tools.json`)**: Acts as a decoupled declarative database mapping abstract tool names to concrete terminal commands and download links.
 
 ---
 
-## 🔧 Adding a New Tool
+## 🔧 Extending tools.json
 
-Edit `tool_manager/config/tools.json`:
+Adding a new tool is incredibly easy. Open `tool_manager/config/tools.json` and add a new block. **No Python code modification is needed.**
 
 ```json
 {
-  "mytool": {
-    "description": "My custom EDA tool",
-    "category": "simulator",
-    "check": "mytool --version",
+  "newtool": {
+    "description": "My hardware tool",
+    "category": "synthesizer",
+    "check": "newtool --version",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
-    "latest_version": "2.0.0",
+    "latest_version": "1.0.5",
     "install": {
-      "linux": "sudo apt install mytool -y",
-      "windows": "winget install mytool",
-      "macos": "brew install mytool"
-    },
-    "homepage": "https://mytool.dev"
+      "windows": "winget install newtool",
+      "linux": "sudo apt install newtool",
+      "macos": "brew install newtool"
+    }
   }
 }
 ```
 
-**No code changes required.** The tool will automatically appear in `list`, `check`, `install`, `update`, and `status`.
-
 ---
 
-## 🧪 Running Tests
+## 🧪 Troubleshooting & Development
 
+### Logs
+Having issues? The manager keeps a rotating log for diagnostic purposes.
+Check the logs located at: `logs/tool_manager.log`
+
+You can also run commands with the verbose flag to immediately spot errors:
+```bash
+esim-tool-manager -v install kicad
+```
+
+### Running Tests
+If you intend to contribute to the project, make sure all tests pass:
 ```bash
 pip install pytest
-python -m pytest -q
+pytest tests/
 ```
-
-All tests use mocked `subprocess.run` calls — no real installations occur during testing.
-
----
-
-## 📝 Logging
-
-Logs are written to `logs/tool_manager.log` with automatic rotation (5 MB max, 3 backups).
-
-Enable verbose console output:
-
-```bash
-esim-tool-manager -v check
-```
+*(All tests heavily use mocked subprocess calls—no real software is downloaded during testing.)*
 
 ---
 
 ## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+This system is provided under the **MIT License**. See the [LICENSE](LICENSE) file for more information.
