@@ -461,28 +461,7 @@ The codebase is organized as a Python package with:
 - add package-source mirroring and retry logic
 - add scheduled update checks
 
-## 16. Optional Presentation Outline
 
-Suggested 5-10 minute presentation flow:
-
-1. Explain the eSim tool-management problem.
-2. State the two primary requirements targeted.
-3. Show the architecture diagram and module split.
-4. Demonstrate `doctor`.
-5. Demonstrate `install ngspice`.
-6. Demonstrate `check ngspice`.
-7. Show the GUI install flow.
-8. Close with future improvements and extensibility.
-
-## 17. Submission Guidelines Checklist
-
-Before final submission:
-
-1. Push the repository to a private GitHub repository.
-2. Grant access to `Eyantra698Sumanto`.
-3. Email the repository link and report to `contact-esim@fossee.in`.
-4. Use the subject line:
-   `eSim Summer Fellowship 2026 Submission Task 5`
 
 ## 18. Conclusion
 
