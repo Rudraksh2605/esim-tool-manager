@@ -4,7 +4,7 @@
     "category": "simulator",
     "binary_names": ["ngspice.exe", "ngspice"],
     "check": "ngspice -n -b -v",
-    "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
+    "version_regex": "\\b(\\d+(?:\\.\\d+)*[\\w.-]*)\\b",
     "latest_version": "43",
     "auto_install": true,
     "install": {
@@ -34,7 +34,9 @@
     "binary_names": ["kicad-cli.exe", "kicad-cli"],
     "path_globs": [
       "C:\\Program Files\\KiCad\\*\\bin",
-      "C:\\Program Files\\KiCad\\bin"
+      "C:\\Program Files\\KiCad\\bin",
+      "%LOCALAPPDATA%\\Programs\\KiCad\\*\\bin",
+      "%LOCALAPPDATA%\\Programs\\KiCad\\bin"
     ],
     "check": "kicad-cli version",
     "version_regex": "\\b(\\d+\\.\\d+[\\w.-]*)\\b",
@@ -50,7 +52,7 @@
         "url": "https://kicad-downloads.s3.cern.ch/windows/stable/kicad-9.0.1-x86_64.exe",
         "filename": "kicad-9.0.1-x86_64.exe",
         "type": "exe_installer",
-        "silent_args": "--mode unattended"
+        "silent_args": "/S"
       }
     },
     "uninstall": {

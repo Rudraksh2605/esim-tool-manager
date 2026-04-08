@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Callable
 
 from packaging.version import InvalidVersion, Version
 
@@ -77,13 +77,28 @@ class ToolUpdater:
             )
 
         current_version = check_result.version
-        if not current_version or not latest_version:
+        if not latest_version:
             return UpdateResult(
                 tool_name=tool_name,
                 action=UpdateAction.ERROR,
                 current_version=current_version,
                 latest_version=latest_version,
-                message="Unable to compare versions (missing data).",
+                message="Unable to determine latest version from config.",
+            )
+
+        if not current_version:
+            # Tool is installed but version parsing failed. Offer update anyway.
+            message = (
+                f"Update available for '{tool_name}': "
+                f"Unknown -> {latest_version}"
+            )
+            logger.info("Version parsing failed for '%s'. Offering update anyway.", tool_name)
+            return UpdateResult(
+                tool_name=tool_name,
+                action=UpdateAction.UPDATE_AVAILABLE,
+                current_version=current_version,
+                latest_version=latest_version,
+                message=message,
             )
 
         if self._version_less_than(current_version, latest_version):
@@ -110,7 +125,12 @@ class ToolUpdater:
             message=message,
         )
 
-    def update_tool(self, tool_name: str) -> UpdateResult:
+    def update_tool(
+        self,
+        tool_name: str,
+        status_callback: Optional[Callable[[str], None]] = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
+    ) -> UpdateResult:
         """Install the configured target version if an update is available."""
 
         check_result = self.check_update(tool_name)
@@ -123,7 +143,11 @@ class ToolUpdater:
             check_result.current_version,
             check_result.latest_version,
         )
-        install_result = self.installer.install_tool(tool_name)
+        install_result = self.installer.install_tool(
+            tool_name,
+            status_callback=status_callback,
+            progress_callback=progress_callback,
+        )
 
         if install_result.success:
             return UpdateResult(

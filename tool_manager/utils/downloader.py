@@ -34,8 +34,9 @@ _SOURCEFORGE_PREFIX = "https://downloads.sourceforge.net/project/"
 _CHUNK_SIZE = 1024 * 256
 
 # ── Parallel download tunables ───────────────────────────────────────────────
-_NUM_SEGMENTS = 8            # Number of parallel connections
+_NUM_SEGMENTS = 4            # Number of parallel connections
 _MIN_SIZE_FOR_PARALLEL = 2 * 1024 * 1024   # Only parallelise files > 2 MB
+_MAX_RETRIES = 3             # Max retries per segment
 
 
 class DownloadError(Exception):
@@ -346,6 +347,29 @@ def _download_segment(
     Updates ``progress_array[segment_id]`` with the number of bytes this
     segment has downloaded so far (thread-safe via *progress_lock*).
     """
+    for attempt in range(1, _MAX_RETRIES + 1):
+        try:
+            _execute_segment_download(url, segment_path, start_byte, end_byte, segment_id, progress_array, progress_lock)
+            return
+        except Exception as exc:
+            if attempt == _MAX_RETRIES:
+                logger.error("Segment %d failed after %d attempts: %s", segment_id, _MAX_RETRIES, exc)
+                raise
+            backoff = 2 ** attempt
+            logger.warning("Segment %d failed (attempt %d/%d). Retrying in %ds... Error: %s", segment_id, attempt, _MAX_RETRIES, backoff, exc)
+            time.sleep(backoff)
+
+
+def _execute_segment_download(
+    url: str,
+    segment_path: Path,
+    start_byte: int,
+    end_byte: int,
+    segment_id: int,
+    progress_array: list,
+    progress_lock: threading.Lock,
+) -> None:
+    """Internal helper to perform a single download attempt for a segment."""
     ctx = ssl.create_default_context()
     opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
     req = _build_request(url, extra_headers={
@@ -353,7 +377,7 @@ def _download_segment(
     })
 
     seg_downloaded = 0
-    with opener.open(req, timeout=300) as resp:
+    with opener.open(req, timeout=600) as resp:
         with segment_path.open("wb") as fh:
             while True:
                 chunk = resp.read(_CHUNK_SIZE)
@@ -612,6 +636,11 @@ def run_exe_installer(
 
     if result.returncode == 0:
         return True, "Installer completed successfully."
+
+    # Exit code 3010 means "success, reboot required" (common with
+    # MSI-based and BitRock installers like KiCad).
+    if result.returncode == 3010:
+        return True, "Installer completed successfully (system restart may be required)."
 
     error_hint = result.stderr.strip()[:300] if result.stderr else ""
     return False, f"Installer exited with code {result.returncode}. {error_hint}"

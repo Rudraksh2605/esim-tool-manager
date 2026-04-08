@@ -8,6 +8,7 @@ import glob
 import os
 import shlex
 import subprocess
+import time
 import webbrowser
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,7 +39,7 @@ class ToolInstaller:
     Install tools by direct download, package-manager command, or manual fallback.
     """
 
-    def __init__(self, tools_config: dict, dry_run: bool = False, timeout: int = 600):
+    def __init__(self, tools_config: dict, dry_run: bool = False, timeout: int = 1800):
         self.tools_config = tools_config
         self.dry_run = dry_run
         self.timeout = timeout
@@ -95,10 +96,11 @@ class ToolInstaller:
                 return result
 
             logger.warning(
-                "Direct download install for '%s' failed, falling back to install command.",
+                "Direct download install for '%s' failed: %s. Falling back to install command.",
                 tool_name,
+                result.message,
             )
-            self._notify(status_callback, f"Download failed, falling back to command install for {tool_name}...")
+            self._notify(status_callback, f"Download failed ({result.message}), falling back to command install for {tool_name}...")
 
         if command:
             logger.info("Installing '%s' via command: %s", tool_name, command)
@@ -190,21 +192,39 @@ class ToolInstaller:
                 )
                 installed_bin_dir = None
 
-                if success:
-                    configured_path = download_cfg.get("add_to_path")
-                    if configured_path and Path(os.path.expandvars(configured_path)).exists():
-                        installed_bin_dir = os.path.expandvars(configured_path)
-                    else:
-                        installed_bin_dir = self._discover_installed_bin_dir(
-                            tool_name,
-                            tool_cfg,
-                            search_root=download_cfg.get("search_root"),
-                            download_cfg=download_cfg,
-                        )
+                # Allow filesystem to settle after installer completes
+                time.sleep(3)
 
-                    if installed_bin_dir:
-                        _, path_message = add_to_user_path(installed_bin_dir)
-                        message = f"{message} {path_message}"
+                # Always try to discover the binary directory, even if the
+                # installer reported a non-zero exit code.  Some installers
+                # (e.g. KiCad / BitRock) return non-zero for benign
+                # conditions like "reboot required".
+                configured_path = download_cfg.get("add_to_path")
+                if configured_path and Path(os.path.expandvars(configured_path)).exists():
+                    installed_bin_dir = os.path.expandvars(configured_path)
+                else:
+                    installed_bin_dir = self._discover_installed_bin_dir(
+                        tool_name,
+                        tool_cfg,
+                        search_root=download_cfg.get("search_root"),
+                        download_cfg=download_cfg,
+                    )
+
+                if installed_bin_dir:
+                    _, path_message = add_to_user_path(installed_bin_dir)
+                    message = f"{message} {path_message}"
+                    if not success:
+                        logger.info(
+                            "Installer for '%s' exited with non-zero code but "
+                            "binary found at %s; treating as success.",
+                            tool_name,
+                            installed_bin_dir,
+                        )
+                        success = True
+                        message = (
+                            f"Installer for '{tool_name}' completed "
+                            f"(binary found at {installed_bin_dir}). {path_message}"
+                        )
 
                 return InstallResult(
                     tool_name=tool_name,
@@ -251,12 +271,16 @@ class ToolInstaller:
     def _execute_elevated_windows(self, tool_name: str, command: str) -> InstallResult:
         """Run an install command inside an elevated PowerShell process."""
 
-        escaped_command = command.replace("'", "''")
+        import base64
+        # Wrap the command in a scriptblock that properly propagates the exit code.
+        # We base64 encode it to avoid PowerShell's notorious ArgumentList parsing bugs,
+        # especially with characters like '='.
+        inner_script = f"& {{ {command} }}; $code=$LASTEXITCODE; if (!$code) {{ $code = $(if ($?) {{0}} else {{1}}) }}; exit $code"
+        encoded_cmd = base64.b64encode(inner_script.encode('utf-16le')).decode('utf-8')
+
         ps_script = (
             "$proc = Start-Process powershell.exe "
-            f"-ArgumentList '-NoProfile -Command & {{ {escaped_command}; "
-            "$code=$LASTEXITCODE; if (!$code) { $code = $(if ($?) {0} else {1}) }; "
-            "exit $code }}' "
+            f"-ArgumentList '-NoProfile -WindowStyle Hidden -EncodedCommand {encoded_cmd}' "
             "-Verb RunAs -Wait -PassThru; "
             "exit $proc.ExitCode"
         )
@@ -512,6 +536,38 @@ class ToolInstaller:
                 return_code=install_result.return_code,
                 installed_bin_dir=install_result.installed_bin_dir,
             )
+
+        # Verification command returned non-zero.  Before giving up, check
+        # whether the binary physically exists on disk.  This handles cases
+        # where the tool IS installed but the check command fails (e.g.
+        # missing DLLs at first launch, needs system restart, etc.).
+        if not installed_bin_dir:
+            installed_bin_dir = self._discover_installed_bin_dir(tool_name, tool_cfg)
+            if installed_bin_dir:
+                install_result.installed_bin_dir = installed_bin_dir
+                add_to_user_path(installed_bin_dir)
+
+        if installed_bin_dir:
+            binary_names = tool_cfg.get("binary_names", [])
+            for name in binary_names:
+                if (Path(installed_bin_dir) / name).exists():
+                    message = (
+                        f"'{tool_name}' installed to {installed_bin_dir}. "
+                        "The verification command did not succeed, but the "
+                        "binary was found on disk. A system restart may be "
+                        "required for full functionality."
+                    )
+                    logger.info(message)
+                    return InstallResult(
+                        tool_name=tool_name,
+                        success=True,
+                        message=message,
+                        command_executed=install_result.command_executed,
+                        stdout=install_result.stdout,
+                        stderr=install_result.stderr,
+                        return_code=install_result.return_code,
+                        installed_bin_dir=installed_bin_dir,
+                    )
 
         message = (
             f"'{tool_name}' finished running, but the tool is still not detected on the "

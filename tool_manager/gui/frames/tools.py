@@ -332,27 +332,29 @@ class ToolDetailPanel(ctk.CTkFrame):
                 f"Please search online for installation instructions."
             )
 
-    def _do_check(self):
+    def _do_check(self, update_output: bool = True):
         if self._is_busy:
             return
-        self._lock_ui(f"Checking {self.tool_name}…")
+        if update_output:
+            self._lock_ui(f"Checking {self.tool_name}…")
 
         def worker():
             checker = ToolChecker(self._parent_frame.tools_config)
             return checker.check_tool(self.tool_name)
 
         def done(result):
-            self._unlock_ui()
+            if update_output:
+                self._unlock_ui()
+                self._set_output("Check Result:", result.raw_output or result.error_message or "Unknown")
             self._status = result.status.value
             self._version = result.version
             self._update_badge(result.status.value)
+            
             ver = f"v{result.version}" if result.version else "not found"
             self._ver_label.configure(
                 text=f"Version: {ver}",
                 text_color=COLORS["accent_green"] if result.version else COLORS["accent_red"],
             )
-            output = result.raw_output or result.error_message or "No output."
-            self._set_output("Check Output:", output)
 
         self._run_bg(worker, done)
 
@@ -443,18 +445,29 @@ class ToolDetailPanel(ctk.CTkFrame):
         self._run_bg(worker, done)
 
     def _do_update(self):
-        self._disable_buttons()
+        if self._is_busy:
+            return
+        self._lock_ui(f"Updating {self.tool_name}...")
 
         def worker():
             checker = ToolChecker(self._parent_frame.tools_config)
             installer = ToolInstaller(self._parent_frame.tools_config)
             updater = ToolUpdater(self._parent_frame.tools_config, checker, installer)
-            return updater.update_tool(self.tool_name)
+            return updater.update_tool(
+                self.tool_name,
+                status_callback=lambda msg: self.after(0, lambda: self._update_download_status(msg)),
+                progress_callback=lambda d, t: self.after(
+                    0,
+                    lambda: self._update_download_stats(
+                        d, t, max(0.1, (d / (1024 * 1024)) / getattr(self, "_dl_time", 1.0))
+                    ),
+                ),
+            )
 
         def done(result):
-            self._enable_buttons()
+            self._unlock_ui()
             self._set_output("Update Result:", result.message)
-            self._do_check()
+            self._do_check(update_output=False)
 
         self._run_bg(worker, done)
 
